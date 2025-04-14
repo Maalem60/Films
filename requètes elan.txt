@@ -1,0 +1,303 @@
+ Il manquait cette association qui est devenue une table :
+ 
+CREATE TABLE film_genre (
+    FilmID INT NOT NULL,
+    genreID INT NOT NULL,
+    PRIMARY KEY (FilmID, genreID),
+    FOREIGN KEY (FilmID) REFERENCES Film(FilmID),
+    FOREIGN KEY (genreID) REFERENCES genre(genreID)
+);
+
+REQUETES /EXERCIE CINEMA:
+------------------------------------------------------------------------------------------------------------------
+1/ a)Informations d’un film (id_film) : titre, année, durée (au format HH:MM) et 
+r-------------------------------------------------------------------------------
+SELECT 
+    f.FilmID, -- f etant l'abreviation de film --
+    f.title,
+    f.anneeSortie,
+    DATE_FORMAT(SEC_TO_TIME(f.duree * 60), '%H:%i') AS duree_formattee, -- format de la durée du film --
+    CONCAT(p.prenom, ' ', p.nom) AS realisateur -- synthèse des noms,pNoms des réalsiateurs --
+FROM film f -- on appelle la table film avec son abreviation f --
+JOIN realisateur r ON f.realisateurID = r.realisateurID -- on joint chaque film à son realisteur --
+JOIN personne p ON r.realisateurID = p.personneID -- on joint chaque nom à son realisateur --
+WHERE f.FilmID = 1; -- afficher le film dont l'id est 1 --
+
+-------------------------------------------------------------------------------------------------------------------
+ 1/ b)Liste des films dont la durée excède 2h15 classés par durée (du + long au + court)  
+---------------------------------------------------------------------------------------
+SELECT 
+    f.FilmID,
+    f.title,
+    f.anneeSortie,
+    DATE_FORMAT(SEC_TO_TIME(f.duree * 60), '%H:%i') AS duree_formattee
+FROM film f
+WHERE f.duree > 135  -- 2h15 = 135 minutes
+ORDER BY f.duree DESC;  -- Classement par durée, du plus long au plus court
+------------------------------------------------------------------------------------------------------------------
+1/ c)Liste des films d’un réalisateur (en précisant l’année de sortie)  
+----------------------------------------------------------------------
+SELECT 
+    f.title, 
+    f.anneeSortie
+FROM 
+    film f
+JOIN 
+    realisateur r ON f.realisateurID = r.realisateurID
+WHERE 
+    r.realisateurID = 1; -- Remplace 1 par l'ID du réalisateur 
+-------------------------------------------------------------------------------------------------------------------
+1/ d)Nombre de films par genre (classés dans l’ordre décroissant) 
+-----------------------------------------------------------------
+SELECT 
+    g.nom_genre AS genre, 
+    COUNT(f.FilmID) AS nombre_films
+FROM 
+    genre g
+JOIN 
+    film_genre fg ON g.genreID = fg.genreID 
+JOIN 
+    film f ON fg.FilmID = f.FilmID -- jointure des films pour y acceder --
+GROUP BY 
+    g.genreID
+ORDER BY 
+    nombre_films DESC;
+-------------------------------------------------------------------------------------------------------------------
+  1/e). Nombre de films par réalisateur (classés dans l’ordre décroissant):
+  -------------------------------------------------------------------------
+ 
+ SELECT 
+    CONCAT(p.prenom, ' ', p.nom) AS realisateur, 
+    COUNT(f.FilmID) AS nombre_films
+FROM 
+    film f
+JOIN 
+    realisateur r ON f.realisateurID = r.realisateurID
+JOIN 
+    personne p ON r.realisateurID = p.personneID
+GROUP BY 
+    r.realisateurID
+ORDER BY 
+    nombre_films DESC;
+------------------------------------------------------------------------------------------------------------------
+1/ f) f. Casting d’un film en particulier (id_film) : nom, prénom des acteurs + sexe :
+------------------------------------------------------------------------------------
+
+SELECT p.nom, p.prenom, p.sexe                                
+FROM Casting c
+JOIN Acteur a ON c.acteurID = a.acteurID
+JOIN Personne p ON a.personneID = p.personneID
+WHERE c.filmID = [ID_DU_FILM];
+
+SELECT personne.nom, personne.prenom, personne.sexe
+FROM casting
+JOIN acteur ON casting.acteurID = acteur.acteurID
+JOIN personne ON acteur.acteurID = personne.personneID
+WHERE casting.filmID = [ID_FILM];
+
+-------------------------------------------------------------------------------------------------------------------
+1/g) Films tournés par un acteur en particulier (id_acteur) avec leur rôle et l’année de
+sortie (du film le plus récent au plus ancien) :
+----------------------------------------------
+
+SELECT f.title, f.anneeSortie, pj.nom AS role
+FROM Casting c
+JOIN Films f ON c.filmID = f.filmID
+JOIN Personnage pj ON c.personnageID = pj.personnageID
+WHERE c.acteurID = [ID_ACTEUR]
+ORDER BY f.anneeSortie DESC;
+
+SELECT films.title, films.anneeSortie, personnage.role
+FROM casting
+JOIN films ON casting.filmID = films.filmID
+JOIN personnage ON casting.personnageID = personnage.personnageID
+WHERE casting.acteurID = [ID_ACTEUR]
+ORDER BY films.anneeSortie DESC;
+
+-------------------------------------------------------------------------------------------------------------------
+1/ h) Liste des personnes qui sont à la fois acteurs et réalisateurs :
+--------------------------------------------------------------------
+
+SELECT p.nom, p.prenom
+FROM Personne p
+JOIN Acteur a ON p.personneID = a.personneID
+JOIN Realisateur r ON p.personneID = r.personneID;
+
+SELECT personne.nom, personne.prenom
+FROM personne
+JOIN acteur ON personne.personneID = acteur.acteurID
+JOIN realisateur ON personne.personneID = realisateur.realisateurID;
+
+
+--------------------------------------------------------------------------------------------------------------------
+1/i) Liste des films qui ont moins de 5 ans (classés du plus récent au plus ancien) :
+-----------------------------------------------------------------------------------
+
+SELECT title, anneeSortie
+FROM Films
+WHERE anneeSortie >= YEAR(CURDATE()) - 5
+ORDER BY anneeSortie DESC;
+
+SELECT title, anneeSortie
+FROM films
+WHERE anneeSortie >= YEAR(CURDATE()) - 5
+ORDER BY anneeSortie DESC;
+
+--------------------------------------------------------------------------------------------------------------------
+1/ j) Nombre d’hommes et de femmes parmi les acteurs :
+----------------------------------------------------
+
+SELECT p.sexe, COUNT(*) AS nombre
+FROM Acteur a
+JOIN Personne p ON a.personneID = p.personneID
+GROUP BY p.sexe;
+
+SELECT personne.sexe, COUNT(*) AS nombre
+FROM acteur
+JOIN personne ON acteur.acteurID = personne.personneID
+GROUP BY personne.sexe;
+
+--------------------------------------------------------------------------------------------------------------------
+1/k) Liste des acteurs ayant plus de 50 ans (âge révolu et non révolu) :
+----------------------------------------------------------------------
+SELECT p.nom, p.prenom, p.dateNaissance,
+       TIMESTAMPDIFF(YEAR, p.dateNaissance, CURDATE()) AS age
+
+FROM Acteur a
+JOIN Personne p ON a.personneID = p.personneID
+WHERE TIMESTAMPDIFF(YEAR, p.dateNaissance, CURDATE()) > 50;
+
+SELECT personne.nom, personne.prenom,
+       TIMESTAMPDIFF(YEAR, personne.dateNaissance, CURDATE()) AS age
+FROM acteur
+JOIN personne ON acteur.acteurID = personne.personneID
+WHERE TIMESTAMPDIFF(YEAR, personne.dateNaissance, CURDATE()) > 50;
+
+--------------------------------------------------------------------------------------------------------------------
+1/l) Acteurs ayant joué dans 3 films ou plus :
+--------------------------------------------
+
+SELECT p.nom, p.prenom, COUNT(*) AS nb_films
+FROM Casting c
+JOIN Acteur a ON c.acteurID = a.acteurID
+JOIN Personne p ON a.personneID = p.personneID
+GROUP BY c.acteurID
+HAVING COUNT(*) >= 3;
+
+SELECT personne.nom, personne.prenom, COUNT(DISTINCT casting.filmID) AS nb_films
+FROM casting
+JOIN acteur ON casting.acteurID = acteur.acteurID
+JOIN personne ON acteur.acteurID = personne.personneID
+GROUP BY casting.acteurID
+HAVING COUNT(DISTINCT casting.filmID) >= 3;
+
+--------------------------------------------------------------------------------------------------------------------
+	
+____________________________________________________________________________________________________________________
+
+ 1/  essais remplissage :
+
+ INSERT INTO personne (personneID, nom, prenom, sexe, dateNaissance)
+VALUES (1, 'Nolan', 'Christopher', 'Homme', '1970-07-30');
+
+INSERT INTO realisateur (realisateurID)
+VALUES (1);
+
+INSERT INTO film (filmID, title, anneeSortie, duree, synopsis, note, affiche, realisateurID)
+VALUES (1, 'Inception', 2010, 148, 'Film de science-fiction sur les rêves.', 9, 'inception.jpg', 1);
+-------------------------------------------------------------------------------------------------------------------
+NB :
+
+SELECT
+f.filmID,
+f.title,
+f.anneeSortie
+DATE_FORMAT(SEC_TO_TIME(f.duree * 60), '%H:%i') AS duree_formatee,
+CONCAT(p.prenom,  ' ', p.nom) AS realisateur
+FROM film f
+JOINT realisateur r ON f.realisateurID = r.realisateurID
+JOINT personne p ON r.realisateurID = p.personneID
+WHERE f.FilmID = 1;
+-------------------------------------------------------------------------------------------------------------------
+INSERTIONS PERSONNES /
+---------------------
+
+INSERT INTO personne (personneID, nom, prenom, sexe, dateNaissance) VALUES
+(1, 'Tarantino', 'Quentin', 'M', '1963-03-27'),
+(2, 'DiCaprio', 'Leonardo', 'M', '1974-11-11'),
+(3, 'Pitt', 'Brad', 'M', '1963-12-18'),
+(4, 'Robbie', 'Margot', 'F', '1990-07-02');
+-------------------------------------------------------------------------------------------------------------------
+INSERTION REALISATEURS/
+----------------------
+
+INSERT INTO realisateur (realisateurID) VALUES
+(1); -- correspond à Quentin Tarantino
+--------------------------------------------------------------------------------------------------------------------
+INSERTION ACTEURS / 
+------------------
+
+INSERT INTO acteur (acteurID, nom, prenom) VALUES
+(2, 'DiCaprio', 'Leonardo'),
+(3, 'Pitt', 'Brad'),
+(4, 'Robbie', 'Margot');
+--------------------------------------------------------------------------------------------------------------------
+INSERTION FILM /
+---------------
+
+INSERT INTO film (filmID, title, anneeSortie, duree, synopsis, note, affiche, realisateurID) VALUES
+(1, 'Once Upon a Time in Hollywood', 2019, 161, 'Film sur le Hollywood de 1969', 9, 'affiche1.jpg', 1);
+--------------------------------------------------------------------------------------------------------------------
+INSERTION PERSONNAGES /
+----------------------
+INSERT INTO personnage (personnageID, nom, role) VALUES
+(1, 'Rick Dalton', 'acteur de western'),
+(2, 'Cliff Booth', 'cascadeur'),
+(3, 'Sharon Tate', 'voisine');
+--------------------------------------------------------------------------------------------------------------------
+INSERTION CASTING /
+------------------
+
+INSERT INTO casting (filmID, acteurID, personnageID) VALUES
+(1, 2, 1), -- DiCaprio joue Rick Dalton
+(1, 3, 2), -- Pitt joue Cliff Booth
+(1, 4, 3); -- Robbie joue Sharon Tate
+--------------------------------------------------------------------------------------------------------------------
+REQUETE DE TEST :
+----------------
+
+1ère ) SELECT 
+
+    f.title AS Titre,
+    DATE_FORMAT(SEC_TO_TIME(f.duree * 60), '%H:%i') AS Duree,
+    f.anneeSortie AS Annee,
+    CONCAT(p.prenom, ' ', p.nom) AS Realisateur
+FROM film f
+JOIN realisateur r ON f.realisateurID = r.realisateurID
+JOIN personne p ON r.realisateurID = p.personneID;
+
+2ème ) SELECT 
+    f.title AS Film,
+    CONCAT(a.prenom, ' ', a.nom) AS Acteur,
+    pj.nom AS Personnage,
+    pj.role
+FROM casting c
+JOIN film f ON c.filmID = f.filmID
+JOIN acteur a ON c.acteurID = a.acteurID
+JOIN personnage pj ON c.personnageID = pj.personnageID;
+--------------------------------------------------------------------------------------------------------------------
+INSERTION GENRE /
+----------------
+
+INSERT INTO genre (genreID, nom_genre, libelle_genre) VALUES
+(1, 'Action', 'Films d’action'),
+(2, 'Science-fiction', 'Films de science-fiction'),
+(3, 'Comédie', 'Films comiques'),
+(4, 'Drame', 'Films dramatiques'),
+(5, 'Aventure', 'Films d’aventure'),
+(6, 'Animé', 'Films d’animation'),
+(7, 'Horreur', 'Films d’horreur'),
+(8, 'Documentaire', 'Documentaires'),
+(9, 'Fantastique', 'Films fantastiques');
+
+
