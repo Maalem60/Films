@@ -18,7 +18,7 @@ SELECT
     f.anneeSortie,
     DATE_FORMAT(SEC_TO_TIME(f.duree * 60), '%H:%i') AS duree_formattee, -- format de la durée du film --
     CONCAT(p.prenom, ' ', p.nom) AS realisateur -- synthèse des noms,pNoms des réalsiateurs --
-FROM film f -- on appelle la table film avec son abreviation f --
+FROM films f -- on appelle la table film avec son abreviation f --
 JOIN realisateur r ON f.realisateurID = r.realisateurID -- on joint chaque film à son realisteur --
 JOIN personne p ON r.realisateurID = p.personneID -- on joint chaque nom à son realisateur --
 WHERE f.FilmID = 1; -- afficher le film dont l'id est 1 --
